@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 
+class QLineEdit;
 class QPushButton;
 class QLabel;
 
@@ -13,12 +14,19 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
 
-private:
-    QLabel *titleLabel;
-    QLabel *subtitleLabel;
+private slots:
+    void onLoginClicked();
 
-    QPushButton *createVaultButton;
-    QPushButton *openVaultButton;
+private:
+    bool isPinValid(const QString &pin) const;
+    void setLockedState(bool locked, const QString &message);
+
+private:
+    QLineEdit *pinEdit{};
+    QPushButton *loginButton{};
+    QLabel *infoLabel{};
+
+    static constexpr const char* kMasterPin = "1234"; // PIN константой (по заданию)
 };
 
 #endif // MAINWINDOW_H
