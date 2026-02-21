@@ -7,6 +7,10 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QCryptographicHash>
+#include "vaultrepository.h"
+#include <QDebug>
+#include <QCryptographicHash>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -17,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto *central = new QWidget(this);
     setCentralWidget(central);
 
-    // главный вертикальный layout
+    // главный вертикальный лейаут
     auto *root = new QVBoxLayout(central);
     root->setContentsMargins(24, 24, 24, 24);
     root->setSpacing(12);
@@ -41,8 +45,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     loginButton = new QPushButton("Войти");
     loginButton->setMinimumHeight(40);
-    auto *toggleButton = new QPushButton("TEST NA BLOCK"); // для теста потом удали это
-    toggleButton->setMinimumHeight(36);// для теста потом удали это
 
     // поле + кнопка
     auto *row = new QHBoxLayout();
@@ -53,7 +55,6 @@ MainWindow::MainWindow(QWidget *parent)
     centerBox->addWidget(title);
     centerBox->addWidget(infoLabel);
     centerBox->addLayout(row);
-    centerBox->addWidget(toggleButton);// для теста потом удали это
 
     // центровка
     root->addStretch(1);
@@ -62,23 +63,18 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(loginButton, &QPushButton::clicked, this, &MainWindow::onLoginClicked);
     connect(pinEdit, &QLineEdit::returnPressed, this, &MainWindow::onLoginClicked);
-    connect(toggleButton, &QPushButton::clicked, this, [this]() {
-        static bool locked = false;
-        locked = !locked;
 
-        if (locked)
-            setLockedState(true, "ТЕСТ режим защиты ");
-        else
-            setLockedState(false, "ТЕСТ режим ввода ");
-    });
 
 }
-
+//проверка пароля на валидность
 bool MainWindow::isPinValid(const QString &pin) const
 {
+    QByteArray key = QCryptographicHash::hash(pin.toUtf8(), QCryptographicHash::Sha256);
+    qDebug() << "SHA256 (hex):" << key.toHex();
     return pin == QString::fromUtf8(kMasterPin);
-}
 
+}
+// gui блокировка поля для ввода потом пригодится
 void MainWindow::setLockedState(bool locked, const QString &message)
 {
     pinEdit->setEnabled(!locked);
@@ -91,23 +87,20 @@ void MainWindow::setLockedState(bool locked, const QString &message)
         infoLabel->setStyleSheet("color:gray;");
     }
 }
-
+// диалоговое окно при ошибке в PIN
 void MainWindow::onLoginClicked()
 {
     const QString pin = pinEdit->text();
-
-    if (!isPinValid(pin)) {
-        setLockedState(false, "Неверный PIN-код. Повторите ввод.");
+    QString err;
+    if (!VaultRepository::tryUnlock(pin, &err)) {
+        setLockedState(false, err.isEmpty() ? "Неверный PIN-код." : err);
         pinEdit->selectAll();
         pinEdit->setFocus();
         return;
     }
 
-    // PIN верный переход на следующее окно
-    auto *vault = new VaultWindow();
+    auto *vault = new VaultWindow(pin);
     vault->show();
-
-    // текущее окно можно скрыть
-    this->hide();
+    hide();
 }
 

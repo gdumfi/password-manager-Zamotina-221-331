@@ -13,6 +13,7 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
+    static constexpr const char* kMasterPin = "5986"; // PIN константой (по заданию)
 
 private slots:
     void onLoginClicked();
@@ -26,7 +27,7 @@ private:
     QPushButton *loginButton{};
     QLabel *infoLabel{};
 
-    static constexpr const char* kMasterPin = "1234"; // PIN константой (по заданию)
+
 };
 
 #endif // MAINWINDOW_H

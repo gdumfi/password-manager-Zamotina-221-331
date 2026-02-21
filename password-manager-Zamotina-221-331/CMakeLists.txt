@@ -11,6 +11,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+set(OPENSSL_ROOT_DIR "C:/msys64/mingw64" CACHE PATH "")
+set(OPENSSL_INCLUDE_DIR "C:/msys64/mingw64/include" CACHE PATH "")
+set(OPENSSL_CRYPTO_LIBRARY "C:/msys64/mingw64/lib/libcrypto.dll.a" CACHE FILEPATH "")
+set(OPENSSL_SSL_LIBRARY    "C:/msys64/mingw64/lib/libssl.dll.a"    CACHE FILEPATH "")
+find_package(OpenSSL REQUIRED)
+
+message(STATUS "OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
+message(STATUS "OpenSSL libraries: ${OPENSSL_LIBRARIES}")
 
 set(PROJECT_SOURCES
         main.cpp
@@ -47,7 +55,12 @@ else()
     endif()
 endif()
 
-target_link_libraries(password-manager-Zamotina-221-331 PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(password-manager-Zamotina-221-331
+    PRIVATE
+        Qt${QT_VERSION_MAJOR}::Widgets
+        OpenSSL::SSL
+        OpenSSL::Crypto
+)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

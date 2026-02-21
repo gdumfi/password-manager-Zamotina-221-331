@@ -13,7 +13,7 @@ class VaultWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit VaultWindow(QWidget *parent = nullptr);
+    explicit VaultWindow(const QString &pin, QWidget *parent = nullptr);
 
 private slots:
     void onFilterChanged(const QString &text);
@@ -31,6 +31,7 @@ private:
 
     CredentialsModel *model{};
     QSortFilterProxyModel *proxy{};
+    QString m_pin;
 };
 
 #endif // VAULTWINDOW_H

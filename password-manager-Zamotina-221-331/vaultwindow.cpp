@@ -1,5 +1,5 @@
 #include "vaultwindow.h"
-
+#include "mainwindow.h"
 #include "credentialsmodel.h"
 #include "vaultrepository.h"
 
@@ -12,9 +12,11 @@
 #include <QHeaderView>
 #include <QSortFilterProxyModel>
 #include <QMessageBox>
+#include <QInputDialog>
+#include <QLineEdit>
 
-VaultWindow::VaultWindow(QWidget *parent)
-    : QMainWindow(parent)
+VaultWindow::VaultWindow(const QString &pin, QWidget *parent)
+    : QMainWindow(parent), m_pin(pin)
 {
     setWindowTitle("Менеджер паролей");
     resize(900, 600);
@@ -85,7 +87,7 @@ int VaultWindow::selectedSourceRow() const
 void VaultWindow::load()
 {
     QString err;
-    QVector<Credential> creds = VaultRepository::load(&err);
+    QVector<Credential> creds = VaultRepository::loadEncrypted(m_pin, &err);
 
     if (!err.isEmpty()) {
         QMessageBox::warning(this, "Загрузка", err);
@@ -97,12 +99,12 @@ void VaultWindow::load()
 void VaultWindow::save()
 {
     QString err;
-    if (!VaultRepository::save(model->credentials(), &err)) {
+    if (!VaultRepository::saveEncrypted(model->credentials(), m_pin, &err)) {
         QMessageBox::warning(this, "Сохранение", err);
     }
 }
 
-
+//надо реализовать шифрование файл фулл зашифрован
 void VaultWindow::onToggleReveal()
 {
     const int row = selectedSourceRow();
@@ -110,7 +112,31 @@ void VaultWindow::onToggleReveal()
         QMessageBox::information(this, "Показать", "Выберите строку в таблице.");
         return;
     }
+    if (model->revealRow() != row) {
+        bool ok = false;
+        const QString pin = QInputDialog::getText(
+            this, "PIN", "Введите PIN для раскрытия:", QLineEdit::Password, "", &ok
+            );
+        if (!ok) return;
 
+        auto &creds = model->credentials();
+        if (row < 0 || row >= creds.size()) return;
+
+        QString login, pass, err;
+        if (!VaultRepository::decryptSecretFromB64(pin, creds[row].secretB64, &login, &pass, &err)) {
+            QMessageBox::warning(this, "Ошибка", err.isEmpty() ? "Неверный PIN." : err);
+            return;
+        }
+
+        creds[row].login = login;
+        creds[row].password = pass;
+
+        model->setRevealRow(row);
+        revealBtn->setText("Скрыть");
+        return;
+    }
+
+    // дальше твоя существующая логика
     if (model->revealRow() == row) {
         model->setRevealRow(-1);
         revealBtn->setText("Показать");
