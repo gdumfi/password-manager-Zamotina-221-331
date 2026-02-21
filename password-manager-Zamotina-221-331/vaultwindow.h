@@ -22,7 +22,7 @@ private slots:
 private:
     void load();
     void save();
-    int selectedSourceRow() const; // индекс выбранной строки в исходной модели
+    int selectedSourceRow() const;
 
 private:
     QLineEdit *filterEdit{};

@@ -9,7 +9,6 @@ void CredentialsModel::setCredentials(QVector<Credential> creds)
 {
     beginResetModel();
     m_creds = std::move(creds);
-    //m_revealRow = -1;
     endResetModel();
 }
 
@@ -20,7 +19,6 @@ void CredentialsModel::setRevealRow(int row)
     const int old = m_revealRow;
     m_revealRow = row;
 
-    // перерисуем старую и новую строки (если были)
     if (old >= 0 && old < m_creds.size())
         emit dataChanged(index(old, 0), index(old, 2));
     if (m_revealRow >= 0 && m_revealRow < m_creds.size())

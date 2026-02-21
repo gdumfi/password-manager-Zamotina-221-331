@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "vaultwindow.h"
+#include "vaultrepository.h"
 
 #include <QWidget>
 #include <QVBoxLayout>
@@ -7,11 +8,8 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QCryptographicHash>
-#include "vaultrepository.h"
-#include <QDebug>
-#include <QCryptographicHash>
 
+// создаем окно логина
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -21,12 +19,10 @@ MainWindow::MainWindow(QWidget *parent)
     auto *central = new QWidget(this);
     setCentralWidget(central);
 
-    // главный вертикальный лейаут
     auto *root = new QVBoxLayout(central);
     root->setContentsMargins(24, 24, 24, 24);
     root->setSpacing(12);
 
-    // внутренний блок по центру
     auto *centerBox = new QVBoxLayout();
     centerBox->setSpacing(10);
 
@@ -34,19 +30,18 @@ MainWindow::MainWindow(QWidget *parent)
     title->setAlignment(Qt::AlignCenter);
     title->setStyleSheet("font-size:18px;font-weight:600;");
 
-    infoLabel = new QLabel("Введите PIN-код (мастер-пароль)");
+    infoLabel = new QLabel("Введите PIN-код");
     infoLabel->setAlignment(Qt::AlignCenter);
     infoLabel->setStyleSheet("color:gray;");
 
     pinEdit = new QLineEdit();
     pinEdit->setPlaceholderText("PIN-код");
-    pinEdit->setEchoMode(QLineEdit::Password); // маскировка
+    pinEdit->setEchoMode(QLineEdit::Password);
     pinEdit->setMaxLength(64);
 
     loginButton = new QPushButton("Войти");
     loginButton->setMinimumHeight(40);
 
-    // поле + кнопка
     auto *row = new QHBoxLayout();
     row->setSpacing(10);
     row->addWidget(pinEdit, 1);
@@ -56,25 +51,15 @@ MainWindow::MainWindow(QWidget *parent)
     centerBox->addWidget(infoLabel);
     centerBox->addLayout(row);
 
-    // центровка
     root->addStretch(1);
     root->addLayout(centerBox);
     root->addStretch(1);
 
     connect(loginButton, &QPushButton::clicked, this, &MainWindow::onLoginClicked);
     connect(pinEdit, &QLineEdit::returnPressed, this, &MainWindow::onLoginClicked);
-
-
 }
-//проверка пароля на валидность
-bool MainWindow::isPinValid(const QString &pin) const
-{
-    QByteArray key = QCryptographicHash::hash(pin.toUtf8(), QCryptographicHash::Sha256);
-    qDebug() << "SHA256 (hex):" << key.toHex();
-    return pin == QString::fromUtf8(kMasterPin);
 
-}
-// gui блокировка поля для ввода потом пригодится
+// блокируем ввод если надо
 void MainWindow::setLockedState(bool locked, const QString &message)
 {
     pinEdit->setEnabled(!locked);
@@ -87,13 +72,15 @@ void MainWindow::setLockedState(bool locked, const QString &message)
         infoLabel->setStyleSheet("color:gray;");
     }
 }
-// диалоговое окно при ошибке в PIN
+
+// проверяем pin расшифровкой файла и открываем хранилище
 void MainWindow::onLoginClicked()
 {
-    const QString pin = pinEdit->text();
+    const QString pin = pinEdit->text().trimmed();
+
     QString err;
     if (!VaultRepository::tryUnlock(pin, &err)) {
-        setLockedState(false, err.isEmpty() ? "Неверный PIN-код." : err);
+        setLockedState(false, err.isEmpty() ? "Неверный PIN-код" : err);
         pinEdit->selectAll();
         pinEdit->setFocus();
         return;
@@ -103,4 +90,3 @@ void MainWindow::onLoginClicked()
     vault->show();
     hide();
 }
-

@@ -8,7 +8,6 @@
 #include <QDir>
 #include <QCoreApplication>
 #include <QFileInfo>
-#include <QDebug>
 #include <QChar>
 #include <openssl/evp.h>
 
@@ -22,31 +21,23 @@ QString VaultRepository::defaultFilePath()
     return QDir::current().filePath("credentials.json");
 }
 
-// IV фиксированный по заданию
+// IV
 QByteArray VaultRepository::iv()
 {
-    return QByteArray::fromHex("00010203040506070809101112131415"); // 16 bytes
+    return QByteArray::fromHex("00010203040506070809101112131415"); // 16
 }
 
-// key = SHA256(pin)
+// key
 QByteArray VaultRepository::pinToKey(const QString &pin)
 {
-    return QCryptographicHash::hash(pin.toUtf8(), QCryptographicHash::Sha256); // 32 bytes
+    return QCryptographicHash::hash(pin.toUtf8(), QCryptographicHash::Sha256); // 32
 }
 
-bool VaultRepository::aesEncrypt(const QByteArray &plain, const QByteArray &key, const QByteArray &iv,
-                                 QByteArray *cipherOut, QString *errorOut)
+bool VaultRepository::aesEncrypt(const QByteArray &plain, const QByteArray &key, const QByteArray &iv,QByteArray *cipherOut, QString *errorOut)
 {
-    if (key.size() != 32 || iv.size() != 16) {
-        if (errorOut) *errorOut = "Некорректный ключ/IV";
-        return false;
-    }
+
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    if (!ctx) {
-        if (errorOut) *errorOut = "OpenSSL: EVP_CIPHER_CTX_new failed";
-        return false;
-    }
 
     QByteArray cipher;
     cipher.resize(plain.size() + 16);
@@ -78,10 +69,6 @@ bool VaultRepository::aesEncrypt(const QByteArray &plain, const QByteArray &key,
 bool VaultRepository::aesDecrypt(const QByteArray &cipher, const QByteArray &key, const QByteArray &iv,
                                  QByteArray *plainOut, QString *errorOut)
 {
-    if (key.size() != 32 || iv.size() != 16) {
-        if (errorOut) *errorOut = "Некорректный ключ/IV";
-        return false;
-    }
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     if (!ctx) {
@@ -90,7 +77,7 @@ bool VaultRepository::aesDecrypt(const QByteArray &cipher, const QByteArray &key
     }
 
     QByteArray plain;
-    plain.resize(cipher.size()); // будет <= cipher.size()
+    plain.resize(cipher.size());
 
     int outLen1 = 0, outLen2 = 0;
 
@@ -116,12 +103,10 @@ bool VaultRepository::aesDecrypt(const QByteArray &cipher, const QByteArray &key
     return true;
 }
 
-// Валидность PIN: смогли расшифровать файл и распарсить JSON
 bool VaultRepository::tryUnlock(const QString &pin, QString *errorOut)
 {
     QFile f(defaultFilePath());
     if (!f.exists()) {
-        // первый запуск: файла нет — считаем PIN допустимым
         return true;
     }
 
@@ -136,7 +121,7 @@ bool VaultRepository::tryUnlock(const QString &pin, QString *errorOut)
     return true;
 }
 
-// 2-й слой: весь файл зашифрован
+// 2-й слой
 QVector<Credential> VaultRepository::loadEncrypted(const QString &pin, QString *errorOut)
 {
     QVector<Credential> out;
@@ -162,18 +147,8 @@ QVector<Credential> VaultRepository::loadEncrypted(const QString &pin, QString *
 
     QJsonParseError perr{};
     QJsonDocument doc = QJsonDocument::fromJson(jsonPlain, &perr);
-    if (perr.error != QJsonParseError::NoError || !doc.isObject()) {
-        if (errorOut) *errorOut = "Расшифровка прошла, но JSON некорректен (возможно неверный PIN): " + perr.errorString();
-        return out;
-    }
-
     const QJsonObject root = doc.object();
     const QJsonValue credsVal = root.value("creds");
-    if (!credsVal.isArray()) {
-        if (errorOut) *errorOut = "Некорректный формат: поле 'creds' должно быть массивом";
-        return out;
-    }
-
     const QJsonArray arr = credsVal.toArray();
     out.reserve(arr.size());
 
@@ -184,7 +159,6 @@ QVector<Credential> VaultRepository::loadEncrypted(const QString &pin, QString *
         Credential c;
         c.url = o.value("url").toString();
         c.secretB64 = o.value("secret").toString(); // 1-й слой: base64
-        // login/password пустые до раскрытия
 
         if (!c.url.isEmpty())
             out.push_back(std::move(c));
@@ -218,19 +192,14 @@ bool VaultRepository::saveEncrypted(const QVector<Credential> &creds, const QStr
     }
 
     QFile f(defaultFilePath());
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        if (errorOut) *errorOut = "Не удалось записать файл хранилища";
-        return false;
-    }
 
     f.write(fileCipher);
     f.close();
     return true;
 }
 
-// 1-й слой: secret = AES(JSON{login,password}) -> base64
-bool VaultRepository::encryptSecretToB64(const QString &pin, const QString &login, const QString &password,
-                                         QString *secretB64Out, QString *errorOut)
+// 1-й слой
+bool VaultRepository::encryptSecretToB64(const QString &pin, const QString &login, const QString &password,QString *secretB64Out, QString *errorOut)
 {
     const QByteArray key = pinToKey(pin);
     const QByteArray ivv = iv();
@@ -249,31 +218,18 @@ bool VaultRepository::encryptSecretToB64(const QString &pin, const QString &logi
     return true;
 }
 
-bool VaultRepository::decryptSecretFromB64(const QString &pin, const QString &secretHexSpaced,
-                                           QString *loginOut, QString *passwordOut,
-                                           QString *errorOut)
+bool VaultRepository::decryptSecretFromB64(const QString &pin, const QString &secretHexSpaced, QString *loginOut, QString *passwordOut,QString *errorOut)
 {
     const QByteArray key = pinToKey(pin);
     const QByteArray ivv = iv();
 
-    // secret хранится как "4c d5 be ..." -> убираем пробелы/переводы строк
     QString hex = secretHexSpaced;
     hex.remove('\r');
     hex.remove('\n');
     hex.remove(' ');
     hex = hex.trimmed();
 
-    // минимальная валидация: длина должна быть чётной и хотя бы 32 байта (64 hex)
-    if (hex.isEmpty() || (hex.size() % 2) != 0) {
-        if (errorOut) *errorOut = "Secret: некорректный hex (пустой или нечётная длина)";
-        return false;
-    }
-
     const QByteArray cipher = QByteArray::fromHex(hex.toLatin1());
-    if (cipher.isEmpty()) {
-        if (errorOut) *errorOut = "Secret: не удалось декодировать hex";
-        return false;
-    }
 
     QByteArray plain;
     if (!aesDecrypt(cipher, key, ivv, &plain, errorOut))
@@ -281,10 +237,6 @@ bool VaultRepository::decryptSecretFromB64(const QString &pin, const QString &se
 
     QJsonParseError perr{};
     QJsonDocument doc = QJsonDocument::fromJson(plain, &perr);
-    if (perr.error != QJsonParseError::NoError || !doc.isObject()) {
-        if (errorOut) *errorOut = "Secret расшифрован, но JSON внутри некорректен: " + perr.errorString();
-        return false;
-    }
 
     const QJsonObject o = doc.object();
     *loginOut = o.value("login").toString();

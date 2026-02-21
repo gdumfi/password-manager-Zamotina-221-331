@@ -15,8 +15,7 @@ public:
     const QVector<Credential>& credentials() const { return m_creds; }
     QVector<Credential>& credentials() { return m_creds; }
 
-    // показать/скрыть логин+пароль для одной строки
-    void setRevealRow(int row); // -1 = скрыть всё
+    void setRevealRow(int row);
     int revealRow() const { return m_revealRow; }
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;

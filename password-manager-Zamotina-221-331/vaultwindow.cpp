@@ -1,5 +1,4 @@
 #include "vaultwindow.h"
-#include "mainwindow.h"
 #include "credentialsmodel.h"
 #include "vaultrepository.h"
 
@@ -104,44 +103,38 @@ void VaultWindow::save()
     }
 }
 
-//надо реализовать шифрование файл фулл зашифрован
+// показываем логин и пароль после ввода pin
 void VaultWindow::onToggleReveal()
 {
     const int row = selectedSourceRow();
     if (row < 0) {
-        QMessageBox::information(this, "Показать", "Выберите строку в таблице.");
-        return;
-    }
-    if (model->revealRow() != row) {
-        bool ok = false;
-        const QString pin = QInputDialog::getText(
-            this, "PIN", "Введите PIN для раскрытия:", QLineEdit::Password, "", &ok
-            );
-        if (!ok) return;
-
-        auto &creds = model->credentials();
-        if (row < 0 || row >= creds.size()) return;
-
-        QString login, pass, err;
-        if (!VaultRepository::decryptSecretFromB64(pin, creds[row].secretB64, &login, &pass, &err)) {
-            QMessageBox::warning(this, "Ошибка", err.isEmpty() ? "Неверный PIN." : err);
-            return;
-        }
-
-        creds[row].login = login;
-        creds[row].password = pass;
-
-        model->setRevealRow(row);
-        revealBtn->setText("Скрыть");
+        QMessageBox::information(this, "Показать", "Выберите строку в таблице");
         return;
     }
 
-    // дальше твоя существующая логика
     if (model->revealRow() == row) {
         model->setRevealRow(-1);
         revealBtn->setText("Показать");
-    } else {
-        model->setRevealRow(row);
-        revealBtn->setText("Скрыть");
+        return;
     }
+
+    bool ok = false;
+    const QString pin = QInputDialog::getText(this,"PIN","Введите PIN для раскрытия",QLineEdit::Password,"",&ok).trimmed();
+
+    if (!ok) return;
+
+    auto &creds = model->credentials();
+    if (row < 0 || row >= creds.size()) return;
+
+    QString login, pass, err;
+    if (!VaultRepository::decryptSecretFromB64(pin, creds[row].secretB64, &login, &pass, &err)) {
+        QMessageBox::warning(this, "Ошибка", err.isEmpty() ? "Неверный PIN" : err);
+        return;
+    }
+
+    creds[row].login = login;
+    creds[row].password = pass;
+
+    model->setRevealRow(row);
+    revealBtn->setText("Скрыть");
 }
