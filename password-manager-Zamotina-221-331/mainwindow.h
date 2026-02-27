@@ -3,21 +3,27 @@
 
 #include <QMainWindow>
 
-QT_BEGIN_NAMESPACE
-namespace Ui {
-class MainWindow;
-}
-QT_END_NAMESPACE
+class QLineEdit;
+class QPushButton;
+class QLabel;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    explicit MainWindow(QWidget *parent = nullptr);
+
+private slots:
+    void onLoginClicked();
 
 private:
-    Ui::MainWindow *ui;
+    void setLockedState(bool locked, const QString &message);
+
+private:
+    QLineEdit *pinEdit{};
+    QPushButton *loginButton{};
+    QLabel *infoLabel{};
 };
+
 #endif // MAINWINDOW_H
