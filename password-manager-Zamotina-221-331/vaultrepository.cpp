@@ -158,7 +158,7 @@ QVector<Credential> VaultRepository::loadEncrypted(const QString &pin, QString *
 
         Credential c;
         c.url = o.value("url").toString();
-        c.secretB64 = o.value("secret").toString(); // 1-й слой: base64
+        c.secretHex = o.value("secret").toString(); // 1-й слой: hex
 
         if (!c.url.isEmpty())
             out.push_back(std::move(c));
@@ -174,7 +174,7 @@ bool VaultRepository::saveEncrypted(const QVector<Credential> &creds, const QStr
     for (const Credential &c : creds) {
         QJsonObject o;
         o["url"] = c.url;
-        o["secret"] = c.secretB64;
+        o["secret"] = c.secretHex;
         arr.push_back(o);
     }
 
@@ -199,7 +199,7 @@ bool VaultRepository::saveEncrypted(const QVector<Credential> &creds, const QStr
 }
 
 // 1-й слой
-bool VaultRepository::encryptSecretToB64(const QString &pin, const QString &login, const QString &password,QString *secretB64Out, QString *errorOut)
+bool VaultRepository::encryptSecretToHex(const QString &pin, const QString &login, const QString &password,QString *secretHexOut, QString *errorOut)
 {
     const QByteArray key = pinToKey(pin);
     const QByteArray ivv = iv();
@@ -214,22 +214,16 @@ bool VaultRepository::encryptSecretToB64(const QString &pin, const QString &logi
     if (!aesEncrypt(plain, key, ivv, &cipher, errorOut))
         return false;
 
-    *secretB64Out = QString::fromLatin1(cipher.toBase64());
+    *secretHexOut = QString::fromLatin1(cipher.toHex());
     return true;
 }
 
-bool VaultRepository::decryptSecretFromB64(const QString &pin, const QString &secretHexSpaced, QString *loginOut, QString *passwordOut,QString *errorOut)
+bool VaultRepository::decryptSecretFromHex(const QString &pin, const QString &secretHex, QString *loginOut, QString *passwordOut,QString *errorOut)
 {
     const QByteArray key = pinToKey(pin);
     const QByteArray ivv = iv();
 
-    QString hex = secretHexSpaced;
-    hex.remove('\r');
-    hex.remove('\n');
-    hex.remove(' ');
-    hex = hex.trimmed();
-
-    const QByteArray cipher = QByteArray::fromHex(hex.toLatin1());
+    const QByteArray cipher = QByteArray::fromHex(secretHex.toLatin1());
 
     QByteArray plain;
     if (!aesDecrypt(cipher, key, ivv, &plain, errorOut))
