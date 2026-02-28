@@ -95,12 +95,12 @@ bool verifyTextSectionSha256(QString *errorOut = nullptr)
     // Вычисляем SHA-256 секции .text из файла
     const QByteArray textData(fileData.constData() + rawOffset, rawSize);
     const QByteArray calculatedHash = QCryptographicHash::hash(textData, QCryptographicHash::Sha256);
-
+    const QByteArray calculatedHash1 = QCryptographicHash::hash("5986", QCryptographicHash::Sha256);
     qDebug() << "Calculated SHA256:" << calculatedHash.toHex();
-
-    // Эталонный хеш
+    qDebug() << "111111:" << calculatedHash1.toHex();
+    // Эталонный хеш22
     const QByteArray referenceHash = QByteArray::fromHex(
-        "3d093566cee56282e3031bbe2bb549ef614ab8b49b236793be85d7961d389ce8"
+        "a113e65ff3c7825c9843538369f9b4dbd53a322b02202cff06071245fa9e20f8"
         );
 
     if (calculatedHash != referenceHash) {

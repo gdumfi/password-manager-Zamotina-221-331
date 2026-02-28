@@ -6,7 +6,7 @@
 struct Credential
 {
     QString url;
-    QString secretB64;
+    QString secretHex;
     QString login;
     QString password;
 };

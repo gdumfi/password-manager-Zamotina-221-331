@@ -13,8 +13,8 @@ public:
 
     static bool saveEncrypted(const QVector<Credential> &creds, const QString &pin, QString *errorOut = nullptr);
     static bool tryUnlock(const QString &pin, QString *errorOut = nullptr);
-    static bool decryptSecretFromB64(const QString &pin, const QString &secretB64,QString *loginOut, QString *passwordOut,QString *errorOut = nullptr);
-    static bool encryptSecretToB64(const QString &pin, const QString &login, const QString &password,QString *secretB64Out, QString *errorOut = nullptr);
+    static bool decryptSecretFromHex(const QString &pin, const QString &secretHex,QString *loginOut, QString *passwordOut,QString *errorOut = nullptr);
+    static bool encryptSecretToHex(const QString &pin, const QString &login, const QString &password,QString *secretHexOut, QString *errorOut = nullptr);
 
 private:
     static QByteArray pinToKey(const QString &pin);

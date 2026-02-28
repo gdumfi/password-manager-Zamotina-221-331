@@ -127,7 +127,7 @@ void VaultWindow::onToggleReveal()
     if (row < 0 || row >= creds.size()) return;
 
     QString login, pass, err;
-    if (!VaultRepository::decryptSecretFromB64(pin, creds[row].secretB64, &login, &pass, &err)) {
+    if (!VaultRepository::decryptSecretFromHex(pin, creds[row].secretHex, &login, &pass, &err)) {
         QMessageBox::warning(this, "Ошибка", err.isEmpty() ? "Неверный PIN" : err);
         return;
     }
